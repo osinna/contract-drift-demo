@@ -1,0 +1,8 @@
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DRIFT: ${DRIFT:-0}
+      RAW_ERRORS: ${RAW_ERRORS:-0}

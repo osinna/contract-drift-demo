@@ -1,0 +1,145 @@
+openapi: 3.0.3
+info:
+  title: Ticket Booking API
+  version: 1.0.0
+  description: Контракт сервісу бронювання квитків (демо «Контракт бреше»). Написаний руками.
+servers:
+  - url: http://localhost:8000
+paths:
+  /events:
+    get:
+      operationId: listEvents
+      summary: Список подій
+      responses:
+        "200":
+          description: Масив подій
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+  /events/{event_id}/seats:
+    get:
+      operationId: listSeats
+      summary: Місця події
+      parameters:
+        - name: event_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Масив місць
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Seat"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /bookings:
+    post:
+      operationId: createBooking
+      summary: Забронювати місце
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingRequest"
+      responses:
+        "200":
+          description: Бронювання створено
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Місце вже заброньоване
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  responses:
+    BadRequest:
+      description: Некоректний запит
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Подію або місце не знайдено
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Event:
+      type: object
+      required: [id, title, venue, starts_at]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        venue:
+          type: string
+        starts_at:
+          type: string
+          format: date-time
+    Seat:
+      type: object
+      required: [id, row, number, price, available]
+      properties:
+        id:
+          type: integer
+        row:
+          type: integer
+        number:
+          type: integer
+        price:
+          type: number
+        available:
+          type: boolean
+    BookingRequest:
+      type: object
+      required: [event_id, seat_id]
+      properties:
+        event_id:
+          type: integer
+        seat_id:
+          type: integer
+    # УВАГА: свідомий дефект контракту для демо.
+    # У Booking немає `required` і не заборонені додаткові поля (`additionalProperties`).
+    # Тому відповідь {"error": ..., "message": ...} з кодом 200 проходить валідацію
+    # як «валідний» Booking — і ловить її лише поведінковий тест.
+    Booking:
+      type: object
+      properties:
+        id:
+          type: integer
+        event_id:
+          type: integer
+        seat_id:
+          type: integer
+        status:
+          type: string
+          enum: [CONFIRMED, CANCELLED]
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+        message:
+          type: string

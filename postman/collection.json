@@ -1,0 +1,612 @@
+{
+  "info": {
+    "name": "Контракт бреше — Ticket Booking",
+    "description": "Демо: звичайні тести, валідація схеми і поведінковий тест. Порядок папок = порядок демо.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "schemaEvents",
+      "value": "{\n  \"type\": \"array\",\n  \"items\": {\n    \"type\": \"object\",\n    \"required\": [\n      \"id\",\n      \"title\",\n      \"venue\",\n      \"starts_at\"\n    ],\n    \"properties\": {\n      \"id\": {\n        \"type\": \"integer\"\n      },\n      \"title\": {\n        \"type\": \"string\"\n      },\n      \"venue\": {\n        \"type\": \"string\"\n      },\n      \"starts_at\": {\n        \"type\": \"string\",\n        \"format\": \"date-time\"\n      }\n    }\n  }\n}"
+    },
+    {
+      "key": "schemaSeats",
+      "value": "{\n  \"type\": \"array\",\n  \"items\": {\n    \"type\": \"object\",\n    \"required\": [\n      \"id\",\n      \"row\",\n      \"number\",\n      \"price\",\n      \"available\"\n    ],\n    \"properties\": {\n      \"id\": {\n        \"type\": \"integer\"\n      },\n      \"row\": {\n        \"type\": \"integer\"\n      },\n      \"number\": {\n        \"type\": \"integer\"\n      },\n      \"price\": {\n        \"type\": \"number\"\n      },\n      \"available\": {\n        \"type\": \"boolean\"\n      }\n    }\n  }\n}"
+    },
+    {
+      "key": "schemaBooking",
+      "value": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"id\": {\n      \"type\": \"integer\"\n    },\n    \"event_id\": {\n      \"type\": \"integer\"\n    },\n    \"seat_id\": {\n      \"type\": \"integer\"\n    },\n    \"status\": {\n      \"type\": \"string\",\n      \"enum\": [\n        \"CONFIRMED\",\n        \"CANCELLED\"\n      ]\n    }\n  }\n}"
+    },
+    {
+      "key": "schemaError",
+      "value": "{\n  \"type\": \"object\",\n  \"required\": [\n    \"error\",\n    \"message\"\n  ],\n  \"properties\": {\n    \"error\": {\n      \"type\": \"string\"\n    },\n    \"message\": {\n      \"type\": \"string\"\n    }\n  }\n}"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Керування демо",
+      "description": "Службові ендпоінти. У контракт не входять.",
+      "item": [
+        {
+          "name": "Увімкнути дрейф",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/_admin/drift",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "_admin",
+                "drift"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"enabled\": true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Вимкнути дрейф",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/_admin/drift",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "_admin",
+                "drift"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"enabled\": false}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Увімкнути «сирі» помилки",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/_admin/raw-errors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "_admin",
+                "raw-errors"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"enabled\": true}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Вимкнути «сирі» помилки",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/_admin/raw-errors",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "_admin",
+                "raw-errors"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"enabled\": false}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Скинути дані",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/_admin/reset",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "_admin",
+                "reset"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Стан",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/_admin/state",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "_admin",
+                "state"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "1. Звичайні тести",
+      "description": "Як зазвичай пишуть тести в Postman: статус-код і пара полів.",
+      "item": [
+        {
+          "name": "GET /events",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Статус 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Список не порожній', function () {",
+                  "    pm.expect(pm.response.json()).to.not.be.empty;",
+                  "});",
+                  "pm.test('У першої події є id', function () {",
+                  "    pm.expect(pm.response.json()[0]).to.have.property('id');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GET /events/1/seats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/1/seats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "1",
+                "seats"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Статус 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Список не порожній', function () {",
+                  "    pm.expect(pm.response.json()).to.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /bookings (вільне місце)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"event_id\": 1, \"seat_id\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Скидаємо дані, щоб результат не залежав від попередніх запусків",
+                  "pm.sendRequest({ url: pm.collectionVariables.get('baseUrl') + '/_admin/reset', method: 'POST' });"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Статус 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('У бронювання є id', function () {",
+                  "    pm.expect(pm.response.json()).to.have.property('id');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Валідація схеми",
+      "description": "Кожна відповідь звіряється зі схемою з контракту. Схема обирається за статус-кодом. Схеми — у змінних колекції schemaEvents, schemaSeats, schemaBooking, schemaError.",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Які схеми для яких статус-кодів описані в контракті (openapi.yaml)",
+              "const CONTRACT = {",
+              "    'GET /events':              { 200: 'schemaEvents' },",
+              "    'GET /events/{id}/seats':   { 200: 'schemaSeats', 400: 'schemaError', 404: 'schemaError' },",
+              "    'POST /bookings':           { 200: 'schemaBooking', 400: 'schemaError', 404: 'schemaError', 409: 'schemaError' }",
+              "};",
+              "",
+              "const path = pm.request.url.getPath().replace(/\\/\\d+(?=\\/|$)/g, '/{id}');",
+              "const endpoint = pm.request.method + ' ' + path;",
+              "const status = pm.response.code;",
+              "",
+              "pm.test(endpoint + ' → ' + status + ' відповідає контракту', function () {",
+              "    const schemaName = (CONTRACT[endpoint] || {})[status];",
+              "    if (!schemaName) {",
+              "        throw new Error('статус ' + status + ' не описаний у контракті');",
+              "    }",
+              "    const schema = JSON.parse(pm.collectionVariables.get(schemaName));",
+              "    const body = pm.response.json();",
+              "",
+              "    const Ajv = require('ajv');",
+              "    const ajv = new Ajv({ allErrors: true, strict: false, logger: false });",
+              "    if (ajv.validate(schema, body)) {",
+              "        return;",
+              "    }",
+              "",
+              "    // Читабельне повідомлення: «шлях: має бути X, прийшло Y»",
+              "    const lines = ajv.errors.map(function (e) {",
+              "        // ajv 6 дає dataPath \".status\" / \"[1].venue\", ajv 8 — instancePath \"/1/venue\"",
+              "        let field = e.dataPath !== undefined",
+              "            ? e.dataPath",
+              "            : e.instancePath.replace(/\\/(\\d+)/g, '[$1]').replace(/\\//g, '.');",
+              "        field = field.replace(/^\\./, '');",
+              "        const value = field.split(/\\.|\\[|\\]/).filter(Boolean)",
+              "            .reduce(function (obj, key) { return obj == null ? obj : obj[key]; }, body);",
+              "        const shown = JSON.stringify(value);",
+              "        if (e.keyword === 'type') {",
+              "            return (field || '(корінь)') + ': має бути ' + e.params.type + ', прийшло ' + shown;",
+              "        }",
+              "        if (e.keyword === 'enum') {",
+              "            return field + ': має бути одне з ' + e.params.allowedValues.join(' / ') + ', прийшло ' + shown;",
+              "        }",
+              "        if (e.keyword === 'required') {",
+              "            return (field ? field + '.' : '') + e.params.missingProperty + ': обовʼязкове поле відсутнє';",
+              "        }",
+              "        return (field || '(корінь)') + ': ' + e.message;",
+              "    });",
+              "",
+              "    const MAX = 3;  // щоб влазило на слайд",
+              "    let message = lines.slice(0, MAX).join('\\n');",
+              "    if (lines.length > MAX) {",
+              "        message += '\\n... і ще ' + (lines.length - MAX) + ' таких самих';",
+              "    }",
+              "    throw new Error(message);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "item": [
+        {
+          "name": "GET /events",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events"
+              ]
+            }
+          }
+        },
+        {
+          "name": "GET /events/1/seats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/events/1/seats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "events",
+                "1",
+                "seats"
+              ]
+            }
+          }
+        },
+        {
+          "name": "POST /bookings (вільне місце)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"event_id\": 1, \"seat_id\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Скидаємо дані, щоб результат не залежав від попередніх запусків",
+                  "pm.sendRequest({ url: pm.collectionVariables.get('baseUrl') + '/_admin/reset', method: 'POST' });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST /bookings (те саме місце ще раз)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"event_id\": 1, \"seat_id\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Скидаємо дані й бронюємо місце 1, щоб наступний запит був ПОВТОРНИМ бронюванням",
+                  "const baseUrl = pm.collectionVariables.get('baseUrl');",
+                  "pm.sendRequest({ url: baseUrl + '/_admin/reset', method: 'POST' }, function () {",
+                  "    pm.sendRequest({",
+                  "        url: baseUrl + '/bookings',",
+                  "        method: 'POST',",
+                  "        header: { 'Content-Type': 'application/json' },",
+                  "        body: { mode: 'raw', raw: JSON.stringify({ event_id: 1, seat_id: 1 }) }",
+                  "    });",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Поведінка",
+      "item": [
+        {
+          "name": "Забронювати місце",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"event_id\": 1, \"seat_id\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Скидаємо дані, щоб результат не залежав від попередніх запусків",
+                  "pm.sendRequest({ url: pm.collectionVariables.get('baseUrl') + '/_admin/reset', method: 'POST' });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Забронювати те саме місце ще раз",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bookings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\"event_id\": 1, \"seat_id\": 1}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Повторне бронювання → 409', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
