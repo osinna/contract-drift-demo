@@ -6,3 +6,12 @@ services:
     environment:
       DRIFT: ${DRIFT:-0}
       RAW_ERRORS: ${RAW_ERRORS:-0}
+
+  swagger:
+    image: swaggerapi/swagger-ui:v5.17.14
+    ports:
+      - "${SWAGGER_PORT:-8090}:8080"
+    environment:
+      SWAGGER_JSON: /spec/openapi.yaml
+    volumes:
+      - ./openapi.yaml:/spec/openapi.yaml:ro

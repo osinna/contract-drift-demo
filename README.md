@@ -16,16 +16,61 @@
 ## Запуск
 
 ```bash
+git clone https://github.com/osinna/contract-drift-demo.git
+cd contract-drift-demo
 docker compose up
 ```
 
-Сервіс працює на `http://localhost:8000`. Дані зберігаються в памʼяті, база не потрібна.
+Піднімаються два контейнери:
+
+| Що | Адреса |
+|---|---|
+| Сервіс бронювання (API) | `http://localhost:8000` |
+| Swagger UI з контрактом `openapi.yaml` | `http://localhost:8090` |
+
+Дані зберігаються в памʼяті, база не потрібна. Зупинити: `Ctrl+C` або `docker compose down`.
+
+Якщо порт 8000 зайнятий — звільніть його (Postman-колекція і Schemathesis розраховують на 8000).
+Якщо зайнятий 8090 — запустіть Swagger на іншому порту: `SWAGGER_PORT=9000 docker compose up`.
+
+## Swagger: подивитися контракт і погратися з API
+
+Відкрийте `http://localhost:8090` у браузері. Там — контракт [`openapi.yaml`](openapi.yaml):
+три ендпоінти, схеми `Event`, `Seat`, `Booking`, `Error` (внизу сторінки, розділ **Schemas**).
+
+Щоб надіслати запит: розгорніть ендпоінт → **Try it out** → заповніть параметри або тіло → **Execute**.
+Нижче зʼявиться реальна відповідь сервісу. Порівняйте її зі схемою в контракті: з увімкненим дрейфом
+вони розходяться (див. «Перемикачі» нижче).
+
+Важливо: Swagger показує те, що **обіцяє контракт**, а не те, що сервіс робить насправді.
+Службових ендпоінтів `/_admin/...` у Swagger немає — вони не входять у контракт.
+
+Не хочете Docker для Swagger? Відкрийте [editor.swagger.io](https://editor.swagger.io), **File → Import file**
+і виберіть `openapi.yaml` — контракт буде видно, але **Try it out** до локального сервісу звідти не
+працюватиме (браузер блокує запити з https-сторінки на `http://localhost`).
 
 ## Postman-колекція
 
-1. Postman → **Import** → виберіть файл [`postman/collection.json`](postman/collection.json).
-2. У змінних колекції `baseUrl` уже стоїть `http://localhost:8000`.
-3. Запускайте папки через **Run collection** (Collection Runner) або окремі запити через **Send**.
+Колекція з демо лежить у репозиторії: [`postman/collection.json`](postman/collection.json).
+
+**Як додати її у свій Postman** (будь-який спосіб):
+
+- **За посиланням, без завантаження.** Postman → **Import** → вставте в поле посилання
+  `https://raw.githubusercontent.com/osinna/contract-drift-demo/main/postman/collection.json` → **Import**.
+- **З файлу.** Якщо ви склонували репозиторій: Postman → **Import** → **files** (або перетягніть файл у вікно)
+  → виберіть `postman/collection.json` з папки проєкту → **Import**.
+- **Без клонування.** Відкрийте файл на GitHub, натисніть **Download raw file** (іконка завантаження праворуч
+  над кодом) і імпортуйте завантажений файл, як у попередньому пункті.
+
+Після імпорту в лівій панелі **Collections** зʼявиться «Контракт бреше — Ticket Booking».
+
+- Адреса сервісу — у змінній колекції `baseUrl` (`http://localhost:8000`): клікніть на колекцію → вкладка **Variables**.
+  Там же схеми `schemaEvents`, `schemaSeats`, `schemaBooking`, `schemaError`.
+- Запускайте папку цілком: три крапки біля папки → **Run folder** → **Run** (Collection Runner).
+  Або окремі запити через **Send**.
+- Колекція працює з робочим простором Postman будь-якого типу, акаунт і хмара для запуску не потрібні,
+  але Postman має бачити `localhost` — у браузерній версії Postman для цього потрібен Postman Desktop Agent,
+  простіше взяти desktop-застосунок.
 
 | Папка | Що робить |
 |---|---|
@@ -75,13 +120,38 @@ curl -X POST localhost:8000/_admin/drift -H 'Content-Type: application/json' -d 
 
 ## Schemathesis
 
+Schemathesis читає контракт `openapi.yaml`, сам генерує сотні запитів (зокрема некоректних) і перевіряє,
+чи відповіді сервісу відповідають контракту.
+
+**Перед запуском:**
+
+1. Сервіс має бути запущений (`docker compose up`) і відповідати на `http://localhost:8000`.
+   Перевірка: `curl localhost:8000/_admin/state` → `{"drift": …, "raw_errors": …}`.
+2. Потрібен Python 3.12 або новіший: `python3 --version`.
+3. Встановіть залежності у віртуальне оточення в папці проєкту (один раз):
+
+   ```bash
+   python3 -m venv .venv
+   .venv/bin/pip install -r requirements.txt
+   ```
+
+   На Windows замість `.venv/bin/` пишіть `.venv\Scripts\`.
+4. Виставте потрібний режим (дрейф, «сирі» помилки — див. «Перемикачі») і скиньте дані:
+   Schemathesis бронює місця, і без скидання результати залежать від попередніх запусків.
+
+   ```bash
+   curl -X POST localhost:8000/_admin/reset
+   ```
+
+**Запуск** (з папки проєкту):
+
 ```bash
-python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-curl -X POST localhost:8000/_admin/reset
 .venv/bin/st run openapi.yaml --url http://localhost:8000 --checks all
 ```
 
-Перед прогоном варто скинути дані: Schemathesis бронює місця.
+Прогін триває 5–15 секунд. У кінці — розділ `SUMMARY`: `No issues found` означає, що розходжень
+не знайдено; інакше вище, у `FAILURES`, кожна знахідка з назвою перевірки, ендпоінтом і командою
+`curl`, щоб повторити запит руками.
 
 ## Чотири розходження і що їх ловить
 
@@ -120,7 +190,7 @@ curl -X POST localhost:8000/_admin/reset
 
 ## Фактичні результати прогонів
 
-Версії: FastAPI 0.143.1, Schemathesis 4.31.0, Newman 6.2.3, openapi-core 0.23.1.
+Версії: FastAPI 0.143.1, Schemathesis 4.31.0, Newman 6.2.3, openapi-core 0.23.1, Swagger UI 5.17.14.
 
 ### Postman (Newman, кожна папка окремо)
 

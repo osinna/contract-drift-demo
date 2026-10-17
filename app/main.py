@@ -11,11 +11,15 @@ import os
 from fastapi import FastAPI, Request
 from fastapi.exception_handlers import http_exception_handler, request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, StrictInt
 from starlette.exceptions import HTTPException
 
 app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
+# Дозволяємо Swagger UI з docker compose (localhost, будь-який порт) робити запити через «Try it out».
+app.add_middleware(CORSMiddleware, allow_origin_regex=r"http://(localhost|127\.0\.0\.1)(:\d+)?",
+                   allow_methods=["*"], allow_headers=["*"])
 
 # --- Дані (фіксовані, в памʼяті) -------------------------------------------
 
